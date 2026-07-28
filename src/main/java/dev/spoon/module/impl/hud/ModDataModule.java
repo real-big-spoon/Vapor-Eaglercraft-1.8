@@ -1,14 +1,13 @@
 package dev.spoon.module.impl.hud;
 
-import net.lax1dude.eaglercraft.v1_8.Keyboard;
 import net.minecraft.client.gui.ScaledResolution;
 import dev.spoon.VaporClient;
 import dev.spoon.module.Module;
 import dev.spoon.module.ModuleCategory;
 
-public final class ModData extends Module {
+public final class ModDataModule extends Module {
 
-    public ModData() {
+    public ModDataModule() {
         super(
                 "Show Mod Data",
                 "Displays the client name and version",

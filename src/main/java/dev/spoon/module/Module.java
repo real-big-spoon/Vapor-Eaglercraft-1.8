@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import dev.spoon.event.VelocityEvent;
 import dev.spoon.setting.Setting;
 import net.minecraft.client.Minecraft;
 
@@ -84,6 +85,10 @@ public abstract class Module {
         }
 
         return null;
+    }
+
+    public void onVelocity(VelocityEvent event) {
+
     }
 
     public final String getName() {

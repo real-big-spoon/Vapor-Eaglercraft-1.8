@@ -1,13 +1,15 @@
 package dev.spoon;
 
-import net.lax1dude.eaglercraft.v1_8.Keyboard;
-
 import dev.spoon.gui.clickgui.ClickGuiScreen;
 import dev.spoon.module.ModuleManager;
 import net.minecraft.client.Minecraft;
 import dev.spoon.config.ConfigManager;
 
-import dev.spoon.module.impl.hud.ModData;
+import dev.spoon.event.VelocityEvent;
+
+import dev.spoon.module.impl.hud.ModDataModule;
+import dev.spoon.module.impl.player.CombatReachModule;
+import dev.spoon.module.impl.player.VelocityModule;
 
 public class VaporClient {
 
@@ -36,7 +38,9 @@ public class VaporClient {
             return;
         }
         // reg
-        moduleManager.register(new ModData());
+        moduleManager.register(new ModDataModule());
+        moduleManager.register(new CombatReachModule());
+        moduleManager.register(new VelocityModule());
         initialized = true;
 
         /*
@@ -86,6 +90,14 @@ public class VaporClient {
             return;
         }
         moduleManager.onRender2D(partialTicks);
+    }
+
+    public void onVelocity(VelocityEvent event) {
+        if (!initialized) {
+            return;
+        }
+
+        moduleManager.onVelocity(event);
     }
 
     public void onRender3D(float partialTicks) {

@@ -1412,15 +1412,15 @@ public class Minecraft implements IThreadListener {
 
 			while (Keyboard.next()) {
 				int keyCode = Keyboard.getEventKey();
+				boolean pressed = Keyboard.getEventKeyState();
 
-				KeyBinding.setKeyBindState(
-						keyCode,
-						Keyboard.getEventKeyState()
-				);
+				// Vanilla keybinding handling: exactly once
+				KeyBinding.setKeyBindState(keyCode, pressed);
 
-				if (Keyboard.getEventKeyState()) {
-					KeyBinding.onTick(keyCode);
+				if (pressed) {
+//					KeyBinding.onTick(keyCode);
 
+					// Your client hook
 					VaporClient.getInstance().onKeyPressed(keyCode);
 				}
 

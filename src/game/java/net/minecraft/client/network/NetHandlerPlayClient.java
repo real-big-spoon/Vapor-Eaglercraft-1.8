@@ -223,6 +223,9 @@ import net.minecraft.world.WorldSettings;
 import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.storage.MapData;
 
+import dev.spoon.VaporClient;
+import dev.spoon.event.VelocityEvent;
+
 /**+
  * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
  * 
@@ -567,10 +570,28 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient {
 	 */
 	public void handleEntityVelocity(S12PacketEntityVelocity packetIn) {
 		Entity entity = this.clientWorldController.getEntityByID(packetIn.getEntityID());
-		if (entity != null) {
-			entity.setVelocity((double) packetIn.getMotionX() / 8000.0D, (double) packetIn.getMotionY() / 8000.0D,
-					(double) packetIn.getMotionZ() / 8000.0D);
+		if (entity == null) {
+			return;
 		}
+
+		double motionX = (double)packetIn.getMotionX() / 8000.0D;
+		double motionY = (double)packetIn.getMotionY() / 8000.0D;
+		double motionZ = (double)packetIn.getMotionZ() / 8000.0D;
+
+		VelocityEvent event = new VelocityEvent(
+				entity,
+				motionX,
+				motionY,
+				motionZ
+		);
+
+		VaporClient.getInstance().onVelocity(event);
+
+		entity.setVelocity(
+				event.getMotionX(),
+				event.getMotionY(),
+				event.getMotionZ()
+		);
 	}
 
 	/**+

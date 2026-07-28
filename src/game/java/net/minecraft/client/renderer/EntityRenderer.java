@@ -92,6 +92,11 @@ import net.minecraft.world.WorldSettings;
 import net.minecraft.world.biome.BiomeGenBase;
 import net.optifine.Config;
 
+// Vapor Client
+import dev.spoon.VaporClient;
+import dev.spoon.module.impl.player.CombatReachModule;
+import dev.spoon.util.ChatUtils;
+
 /**+
  * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
  * 
@@ -324,6 +329,25 @@ public class EntityRenderer implements IResourceManagerReloadListener {
 
 				if (this.mc.objectMouseOver != null) {
 					d1 = this.mc.objectMouseOver.hitVec.distanceTo(vec3);
+				}
+
+				CombatReachModule reachModule = VaporClient.getInstance()
+						.getModuleManager()
+						.getByClass(CombatReachModule.class);
+
+				if (reachModule != null
+						&& reachModule.isEnabled()) {
+
+					double reachDistance = reachModule.getDistance();
+
+					// Length of the entity ray and entity bounding-box search.
+					d0 = reachDistance;
+
+					// Maximum valid entity distance when there is no block obstruction.
+					d1 = reachDistance;
+
+					// Disable vanilla's final three-block entity rejection.
+					flag = false;
 				}
 
 				Vec3 vec31 = entity.getLook(partialTicks);

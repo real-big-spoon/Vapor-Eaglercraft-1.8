@@ -1,6 +1,5 @@
 package dev.spoon.gui.clickgui;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,7 +9,7 @@ import net.minecraft.client.gui.GuiScreen;
 
 public final class ClickGuiScreen extends GuiScreen {
 
-    private static final int PANEL_WIDTH = 110;
+    private static final int PANEL_WIDTH = 120;
     private static final int PANEL_GAP = 8;
     private static final int START_X = 12;
     private static final int START_Y = 18;
@@ -49,13 +48,9 @@ public final class ClickGuiScreen extends GuiScreen {
         int y = START_Y;
 
         for (CategoryPanel panel : panels) {
-            /*
-             * Wrap onto another row if the next panel would go beyond
-             * the right edge of the screen.
-             */
             if (x + PANEL_WIDTH > width - START_X) {
                 x = START_X;
-                y += 150;
+                y += 170;
             }
 
             panel.setPosition(x, y);
@@ -71,10 +66,6 @@ public final class ClickGuiScreen extends GuiScreen {
             int mouseY,
             float partialTicks
     ) {
-        /*
-         * Remove this call if you do not want the world darkened behind
-         * the ClickGUI.
-         */
         drawDefaultBackground();
 
         for (CategoryPanel panel : panels) {
@@ -97,6 +88,42 @@ public final class ClickGuiScreen extends GuiScreen {
         }
 
         super.mouseClicked(mouseX, mouseY, mouseButton);
+    }
+
+    @Override
+    protected void mouseClickMove(
+            int mouseX,
+            int mouseY,
+            int clickedMouseButton,
+            long timeSinceLastClick
+    ) {
+        for (CategoryPanel panel : panels) {
+            panel.mouseDragged(
+                    mouseX,
+                    mouseY,
+                    clickedMouseButton
+            );
+        }
+
+        super.mouseClickMove(
+                mouseX,
+                mouseY,
+                clickedMouseButton,
+                timeSinceLastClick
+        );
+    }
+
+    @Override
+    protected void mouseReleased(
+            int mouseX,
+            int mouseY,
+            int state
+    ) {
+        for (CategoryPanel panel : panels) {
+            panel.mouseReleased(mouseX, mouseY, state);
+        }
+
+        super.mouseReleased(mouseX, mouseY, state);
     }
 
     @Override

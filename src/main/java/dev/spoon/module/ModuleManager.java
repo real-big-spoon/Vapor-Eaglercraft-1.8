@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-//import org.lwjgl.input.Keyboard;
+import dev.spoon.event.VelocityEvent;
 import net.lax1dude.eaglercraft.v1_8.Keyboard;
 
 public final class ModuleManager {
@@ -59,6 +59,14 @@ public final class ModuleManager {
         for (Module module : modules) {
             if (module.isEnabled()) {
                 module.onRender3D(partialTicks);
+            }
+        }
+    }
+
+    public void onVelocity(VelocityEvent event) {
+        for (Module module : modules) {
+            if (module.isEnabled()) {
+                module.onVelocity(event);
             }
         }
     }
