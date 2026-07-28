@@ -1,5 +1,9 @@
-# eaglercraft-workspace
+# Vapor: A lightweight Ghost/Hack Client for EaglerCraft 1.8 
 
+Vapor is a high-performance ghost client designed for Eaglercraft 1.8. It comes with several modules designed to enhance the user experience as well as QOL mods not included in the base EaglerCraft client.
+###Disclaimer: this project is meant for **educational and research purposes only!** You are responsible for playing fairly and using this software within the rules.
+
+# Compiling
 ### Java 17 or greater is required!
 
 **To get started, import this entire folder into your IDE as a Gradle project, this will automatically create several different projects to build all the common classes and each runtime.**
@@ -19,6 +23,7 @@ The WASM-GC client uses a custom fork of TeaVM, the source is available [here](h
 **To run the desktop runtime:**
 
 **Note:** Athough it may be tempting to release "desktop" copies of your client, the current desktop runtime was designed for debug use only and is a poor choice for distribution to end users.
+**Another Note:** Please use Java 17 when running the desktop runtime! On newer Java versions, connecting to multiplayer servers will cause a crash.
 
 Run the `StartDesktopRuntime` script in the "target_lwjgl_desktop" folder (or the `eaglercraftDebugRuntime` Gradle task in your IDE) to run the desktop runtime. This will run the client using the JVM and an LWJGL3-based runtime, which can be useful for debugging crashes and to speed up testing if you don't want to wait for the JavaScript or WASM-GC client to be built.
 
