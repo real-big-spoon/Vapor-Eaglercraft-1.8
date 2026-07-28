@@ -1587,8 +1587,20 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient {
 
 	}
 
+//	public void handleKeepAlive(S00PacketKeepAlive packetIn) {
+//		this.addToSendQueue(new C00PacketKeepAlive(packetIn.func_149134_c()));
+//	}
 	public void handleKeepAlive(S00PacketKeepAlive packetIn) {
-		this.addToSendQueue(new C00PacketKeepAlive(packetIn.func_149134_c()));
+		C00PacketKeepAlive response = new C00PacketKeepAlive(
+				packetIn.func_149134_c()
+		);
+
+		boolean queued = VaporClient.getInstance()
+				.queueKeepAlive(response);
+
+		if (!queued) {
+			this.addToSendQueue(response);
+		}
 	}
 
 	public void handlePlayerAbilities(S39PacketPlayerAbilities packetIn) {

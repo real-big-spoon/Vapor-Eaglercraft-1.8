@@ -95,6 +95,7 @@ import net.optifine.Config;
 // Vapor Client
 import dev.spoon.VaporClient;
 import dev.spoon.module.impl.player.CombatReachModule;
+import dev.spoon.module.impl.render.FovEffectsModule;
 import dev.spoon.util.ChatUtils;
 
 /**+
@@ -416,13 +417,27 @@ public class EntityRenderer implements IResourceManagerReloadListener {
 	 */
 	private void updateFovModifierHand() {
 		float f = 1.0F;
+
 		if (this.mc.getRenderViewEntity() instanceof AbstractClientPlayer) {
-			AbstractClientPlayer abstractclientplayer = (AbstractClientPlayer) this.mc.getRenderViewEntity();
-			f = abstractclientplayer.getFovModifier();
+			AbstractClientPlayer player =
+					(AbstractClientPlayer)this.mc.getRenderViewEntity();
+
+			f = player.getFovModifier();
+		}
+
+		FovEffectsModule fovEffects =
+				VaporClient.getInstance()
+						.getModuleManager()
+						.getByClass(FovEffectsModule.class);
+
+		if (fovEffects != null && fovEffects.isEnabled()) {
+			f = fovEffects.applyIntensity(f);
 		}
 
 		this.fovModifierHandPrev = this.fovModifierHand;
-		this.fovModifierHand += (f - this.fovModifierHand) * 0.5F;
+		this.fovModifierHand +=
+				(f - this.fovModifierHand) * 0.5F;
+
 		if (this.fovModifierHand > 1.5F) {
 			this.fovModifierHand = 1.5F;
 		}
@@ -430,9 +445,7 @@ public class EntityRenderer implements IResourceManagerReloadListener {
 		if (this.fovModifierHand < 0.1F) {
 			this.fovModifierHand = 0.1F;
 		}
-
 	}
-
 	/**+
 	 * Changes the field of view of the player depending on if they
 	 * are underwater or not

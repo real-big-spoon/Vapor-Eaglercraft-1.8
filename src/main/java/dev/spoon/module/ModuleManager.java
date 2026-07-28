@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 
 import dev.spoon.event.VelocityEvent;
-import net.lax1dude.eaglercraft.v1_8.Keyboard;
 
 public final class ModuleManager {
 

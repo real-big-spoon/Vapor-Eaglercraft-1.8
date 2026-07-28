@@ -6,10 +6,13 @@ import net.minecraft.client.Minecraft;
 import dev.spoon.config.ConfigManager;
 
 import dev.spoon.event.VelocityEvent;
+import net.minecraft.network.play.client.C00PacketKeepAlive;
 
 import dev.spoon.module.impl.hud.ModDataModule;
 import dev.spoon.module.impl.player.CombatReachModule;
 import dev.spoon.module.impl.player.VelocityModule;
+import dev.spoon.module.impl.player.PingSpooferModule;
+import dev.spoon.module.impl.render.FovEffectsModule;
 
 public class VaporClient {
 
@@ -41,6 +44,8 @@ public class VaporClient {
         moduleManager.register(new ModDataModule());
         moduleManager.register(new CombatReachModule());
         moduleManager.register(new VelocityModule());
+        moduleManager.register(new PingSpooferModule());
+        moduleManager.register(new FovEffectsModule());
         initialized = true;
 
         /*
@@ -110,5 +115,34 @@ public class VaporClient {
 
     public ConfigManager getConfigManager() {
         return configManager;
+    }
+
+    public boolean queueKeepAlive(C00PacketKeepAlive packet) {
+        if (!initialized) {
+            return false;
+        }
+
+        PingSpooferModule module = moduleManager.getByClass(
+                PingSpooferModule.class
+        );
+
+        return module != null
+                && module.queueKeepAlive(packet);
+    }
+
+    public float applyFovEffects(float vanillaMultiplier) {
+        if (!initialized) {
+            return vanillaMultiplier;
+        }
+
+        FovEffectsModule module = moduleManager.getByClass(
+                FovEffectsModule.class
+        );
+
+        if (module == null) {
+            return vanillaMultiplier;
+        }
+
+        return module.applyIntensity(vanillaMultiplier);
     }
 }

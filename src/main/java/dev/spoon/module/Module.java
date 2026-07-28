@@ -88,7 +88,7 @@ public abstract class Module {
     }
 
     public void onVelocity(VelocityEvent event) {
-
+        // pass?? lol
     }
 
     public final String getName() {

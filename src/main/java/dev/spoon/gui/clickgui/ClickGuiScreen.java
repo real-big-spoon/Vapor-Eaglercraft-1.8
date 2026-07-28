@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dev.spoon.VaporClient;
+import dev.spoon.module.Module;
 import dev.spoon.module.ModuleCategory;
 import net.minecraft.client.gui.GuiScreen;
 
@@ -14,9 +15,22 @@ public final class ClickGuiScreen extends GuiScreen {
     private static final int START_X = 12;
     private static final int START_Y = 18;
 
-    private final List<CategoryPanel> panels = new ArrayList<>();
+    /*
+     * LWJGL/Eagler keyboard codes.
+     */
+    private static final int KEY_ESCAPE = 1;
+    private static final int KEY_BACKSPACE = 14;
+    private static final int KEY_DELETE = 211;
+
+    private final List<CategoryPanel> panels =
+            new ArrayList<CategoryPanel>();
 
     private boolean initializedPanels;
+
+    /*
+     * Only one module may listen for a new keybind at a time.
+     */
+    private Module bindingModule;
 
     @Override
     public void initGui() {
@@ -36,8 +50,10 @@ public final class ClickGuiScreen extends GuiScreen {
         for (ModuleCategory category : ModuleCategory.values()) {
             panels.add(
                     new CategoryPanel(
+                            this,
                             category,
-                            VaporClient.getInstance().getModuleManager()
+                            VaporClient.getInstance()
+                                    .getModuleManager()
                     )
             );
         }
@@ -82,12 +98,25 @@ public final class ClickGuiScreen extends GuiScreen {
             int mouseButton
     ) {
         for (CategoryPanel panel : panels) {
-            if (panel.mouseClicked(mouseX, mouseY, mouseButton)) {
+            if (panel.mouseClicked(
+                    mouseX,
+                    mouseY,
+                    mouseButton
+            )) {
                 return;
             }
         }
 
-        super.mouseClicked(mouseX, mouseY, mouseButton);
+        /*
+         * Clicking outside all panels cancels key capture.
+         */
+        cancelKeybindCapture();
+
+        super.mouseClicked(
+                mouseX,
+                mouseY,
+                mouseButton
+        );
     }
 
     @Override
@@ -120,14 +149,63 @@ public final class ClickGuiScreen extends GuiScreen {
             int state
     ) {
         for (CategoryPanel panel : panels) {
-            panel.mouseReleased(mouseX, mouseY, state);
+            panel.mouseReleased(
+                    mouseX,
+                    mouseY,
+                    state
+            );
         }
 
         super.mouseReleased(mouseX, mouseY, state);
     }
 
     @Override
+    protected void keyTyped(
+            char typedChar,
+            int keyCode
+    ) {
+        if (bindingModule != null) {
+            /*
+             * Escape cancels capture without closing the GUI.
+             */
+            if (keyCode == KEY_ESCAPE) {
+                cancelKeybindCapture();
+                return;
+            }
+
+            /*
+             * Backspace or Delete clears the keybind.
+             */
+            if (keyCode == KEY_BACKSPACE
+                    || keyCode == KEY_DELETE) {
+
+                bindingModule.setKeyBind(
+                        Module.UNBOUND_KEY
+                );
+
+                cancelKeybindCapture();
+                return;
+            }
+
+            /*
+             * Ignore invalid key codes.
+             */
+            if (keyCode <= 0) {
+                return;
+            }
+
+            bindingModule.setKeyBind(keyCode);
+            cancelKeybindCapture();
+            return;
+        }
+
+        super.keyTyped(typedChar, keyCode);
+    }
+
+    @Override
     public void onGuiClosed() {
+        cancelKeybindCapture();
+
         VaporClient.getInstance()
                 .getConfigManager()
                 .save("default");
@@ -138,5 +216,26 @@ public final class ClickGuiScreen extends GuiScreen {
     @Override
     public boolean doesGuiPauseGame() {
         return false;
+    }
+
+    public void beginKeybindCapture(Module module) {
+        if (module == null) {
+            return;
+        }
+
+        bindingModule = module;
+    }
+
+    public void cancelKeybindCapture() {
+        bindingModule = null;
+    }
+
+    public boolean isCapturingKeybind(Module module) {
+        return module != null
+                && bindingModule == module;
+    }
+
+    public Module getBindingModule() {
+        return bindingModule;
     }
 }

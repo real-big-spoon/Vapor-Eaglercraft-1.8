@@ -12,6 +12,7 @@ import dev.spoon.setting.NumberSetting;
 import dev.spoon.setting.Setting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
+import net.minecraft.client.settings.GameSettings;
 
 public final class CategoryPanel {
 
@@ -29,23 +30,36 @@ public final class CategoryPanel {
     private static final int SETTING_COLOR = 0xE6121212;
     private static final int SETTING_HOVER_COLOR = 0xE61C1C1C;
 
-    private static final int SLIDER_BACKGROUND_COLOR = 0xFF303030;
-    private static final int SLIDER_FILL_COLOR = 0xFF7777DD;
+    private static final int KEYBIND_LISTENING_COLOR =
+            0xE6353550;
+
+    private static final int SLIDER_BACKGROUND_COLOR =
+            0xFF303030;
+
+    private static final int SLIDER_FILL_COLOR =
+            0xFF7777DD;
 
     private static final int TEXT_COLOR = 0xFFFFFFFF;
-    private static final int SECONDARY_TEXT_COLOR = 0xFFAAAAAA;
-    private static final int ENABLED_TEXT_COLOR = 0xFFFFFFFF;
+    private static final int SECONDARY_TEXT_COLOR =
+            0xFFAAAAAA;
+
+    private static final int ENABLED_TEXT_COLOR =
+            0xFFFFFFFF;
 
     private final Minecraft mc = Minecraft.getMinecraft();
 
+    private final ClickGuiScreen owner;
     private final ModuleCategory category;
     private final ModuleManager moduleManager;
 
     /*
      * Stores whether each module's settings are expanded.
+     *
+     * The expanded area now always includes a keybind row, even when
+     * the module has no ordinary settings.
      */
     private final Map<Module, Boolean> expandedModules =
-            new HashMap<>();
+            new HashMap<Module, Boolean>();
 
     private int x;
     private int y;
@@ -65,9 +79,29 @@ public final class CategoryPanel {
     private int draggingSliderWidth;
 
     public CategoryPanel(
+            ClickGuiScreen owner,
             ModuleCategory category,
             ModuleManager moduleManager
     ) {
+        if (owner == null) {
+            throw new IllegalArgumentException(
+                    "ClickGuiScreen cannot be null"
+            );
+        }
+
+        if (category == null) {
+            throw new IllegalArgumentException(
+                    "ModuleCategory cannot be null"
+            );
+        }
+
+        if (moduleManager == null) {
+            throw new IllegalArgumentException(
+                    "ModuleManager cannot be null"
+            );
+        }
+
+        this.owner = owner;
         this.category = category;
         this.moduleManager = moduleManager;
     }
@@ -82,11 +116,17 @@ public final class CategoryPanel {
         int currentY = y + HEADER_HEIGHT;
 
         for (Module module : getModules()) {
-            drawModuleRow(module, currentY, mouseX, mouseY);
+            drawModuleRow(
+                    module,
+                    currentY,
+                    mouseX,
+                    mouseY
+            );
+
             currentY += MODULE_HEIGHT;
 
             if (isModuleExpanded(module)) {
-                currentY = drawSettings(
+                currentY = drawExpandedModuleContents(
                         module,
                         currentY,
                         mouseX,
@@ -130,7 +170,8 @@ public final class CategoryPanel {
         mc.fontRendererObj.drawStringWithShadow(
                 indicator,
                 x + width
-                        - mc.fontRendererObj.getStringWidth(indicator)
+                        - mc.fontRendererObj
+                        .getStringWidth(indicator)
                         - 5,
                 y + centerTextOffset(HEADER_HEIGHT),
                 TEXT_COLOR
@@ -179,40 +220,54 @@ public final class CategoryPanel {
                         : SECONDARY_TEXT_COLOR
         );
 
-        if (!module.getSettings().isEmpty()) {
-            String indicator = isModuleExpanded(module)
-                    ? "-"
-                    : "+";
+        /*
+         * Every module can now be expanded because every module has
+         * a keybind row, even if it has no normal settings.
+         */
+        String indicator = isModuleExpanded(module)
+                ? "-"
+                : "+";
 
-            mc.fontRendererObj.drawStringWithShadow(
-                    indicator,
-                    x + width
-                            - mc.fontRendererObj
-                            .getStringWidth(indicator)
-                            - 5,
-                    moduleY + centerTextOffset(MODULE_HEIGHT),
-                    SECONDARY_TEXT_COLOR
-            );
-        }
+        mc.fontRendererObj.drawStringWithShadow(
+                indicator,
+                x + width
+                        - mc.fontRendererObj
+                        .getStringWidth(indicator)
+                        - 5,
+                moduleY + centerTextOffset(MODULE_HEIGHT),
+                SECONDARY_TEXT_COLOR
+        );
     }
 
-    private int drawSettings(
+    private int drawExpandedModuleContents(
             Module module,
             int currentY,
             int mouseX,
             int mouseY
     ) {
+        /*
+         * Keybind is displayed before the module's normal settings.
+         */
+        drawKeybindRow(
+                module,
+                currentY,
+                mouseX,
+                mouseY
+        );
+
+        currentY += SETTING_HEIGHT;
+
         for (Setting<?> setting : module.getSettings()) {
             if (setting instanceof NumberSetting) {
                 drawNumberSetting(
-                        (NumberSetting) setting,
+                        (NumberSetting)setting,
                         currentY,
                         mouseX,
                         mouseY
                 );
             } else if (setting instanceof BooleanSetting) {
                 drawBooleanSetting(
-                        (BooleanSetting) setting,
+                        (BooleanSetting)setting,
                         currentY,
                         mouseX,
                         mouseY
@@ -230,6 +285,68 @@ public final class CategoryPanel {
         }
 
         return currentY;
+    }
+
+    private void drawKeybindRow(
+            Module module,
+            int settingY,
+            int mouseX,
+            int mouseY
+    ) {
+        boolean hovered = isInside(
+                mouseX,
+                mouseY,
+                x,
+                settingY,
+                width,
+                SETTING_HEIGHT
+        );
+
+        boolean listening =
+                owner.isCapturingKeybind(module);
+
+        int backgroundColor;
+
+        if (listening) {
+            backgroundColor = KEYBIND_LISTENING_COLOR;
+        } else if (hovered) {
+            backgroundColor = SETTING_HOVER_COLOR;
+        } else {
+            backgroundColor = SETTING_COLOR;
+        }
+
+        Gui.drawRect(
+                x,
+                settingY,
+                x + width,
+                settingY + SETTING_HEIGHT,
+                backgroundColor
+        );
+
+        mc.fontRendererObj.drawStringWithShadow(
+                "Keybind",
+                x + 8,
+                settingY + centerTextOffset(SETTING_HEIGHT),
+                SECONDARY_TEXT_COLOR
+        );
+
+        String valueText = listening
+                ? "[Press key]"
+                : "[" + getKeybindDisplayName(
+                module.getKeyBind()
+        ) + "]";
+
+        int valueWidth =
+                mc.fontRendererObj.getStringWidth(valueText);
+
+        mc.fontRendererObj.drawStringWithShadow(
+                valueText,
+                x + width - valueWidth - 6,
+                settingY + centerTextOffset(SETTING_HEIGHT),
+                listening
+                        ? TEXT_COLOR
+                        : SECONDARY_TEXT_COLOR
+        );
     }
 
     private void drawNumberSetting(
@@ -271,7 +388,8 @@ public final class CategoryPanel {
         mc.fontRendererObj.drawStringWithShadow(
                 valueText,
                 x + width
-                        - mc.fontRendererObj.getStringWidth(valueText)
+                        - mc.fontRendererObj
+                        .getStringWidth(valueText)
                         - 6,
                 settingY + 3,
                 TEXT_COLOR
@@ -357,7 +475,8 @@ public final class CategoryPanel {
         mc.fontRendererObj.drawStringWithShadow(
                 valueText,
                 x + width
-                        - mc.fontRendererObj.getStringWidth(valueText)
+                        - mc.fontRendererObj
+                        .getStringWidth(valueText)
                         - 6,
                 settingY + centerTextOffset(SETTING_HEIGHT),
                 setting.isEnabled()
@@ -403,7 +522,8 @@ public final class CategoryPanel {
         mc.fontRendererObj.drawStringWithShadow(
                 valueText,
                 x + width
-                        - mc.fontRendererObj.getStringWidth(valueText)
+                        - mc.fontRendererObj
+                        .getStringWidth(valueText)
                         - 6,
                 settingY + centerTextOffset(SETTING_HEIGHT),
                 TEXT_COLOR
@@ -428,6 +548,10 @@ public final class CategoryPanel {
         )) {
             if (mouseButton == 0 || mouseButton == 1) {
                 expanded = !expanded;
+
+                draggingSlider = null;
+                owner.cancelKeybindCapture();
+
                 return true;
             }
         }
@@ -451,12 +575,13 @@ public final class CategoryPanel {
                     MODULE_HEIGHT
             )) {
                 if (mouseButton == 0) {
+                    owner.cancelKeybindCapture();
                     module.toggle();
                     return true;
                 }
 
-                if (mouseButton == 1
-                        && !module.getSettings().isEmpty()) {
+                if (mouseButton == 1) {
+                    owner.cancelKeybindCapture();
 
                     setModuleExpanded(
                             module,
@@ -474,7 +599,36 @@ public final class CategoryPanel {
             }
 
             /*
-             * Settings belonging to this module.
+             * Keybind row.
+             *
+             * Left-click begins listening.
+             * Right-click immediately clears the keybind.
+             */
+            if (isInside(
+                    mouseX,
+                    mouseY,
+                    x,
+                    currentY,
+                    width,
+                    SETTING_HEIGHT
+            )) {
+                if (mouseButton == 0) {
+                    draggingSlider = null;
+                    owner.beginKeybindCapture(module);
+                    return true;
+                }
+
+                if (mouseButton == 1) {
+                    module.setKeyBind(Module.UNBOUND_KEY);
+                    owner.cancelKeybindCapture();
+                    return true;
+                }
+            }
+
+            currentY += SETTING_HEIGHT;
+
+            /*
+             * Normal settings belonging to this module.
              */
             for (Setting<?> setting : module.getSettings()) {
                 if (isInside(
@@ -485,14 +639,13 @@ public final class CategoryPanel {
                         width,
                         SETTING_HEIGHT
                 )) {
+                    owner.cancelKeybindCapture();
+
                     if (setting instanceof NumberSetting
                             && mouseButton == 0) {
 
-                        NumberSetting numberSetting =
-                                (NumberSetting) setting;
-
                         beginSliderDrag(
-                                numberSetting,
+                                (NumberSetting)setting,
                                 mouseX
                         );
 
@@ -502,7 +655,7 @@ public final class CategoryPanel {
                     if (setting instanceof BooleanSetting
                             && mouseButton == 0) {
 
-                        ((BooleanSetting) setting).toggle();
+                        ((BooleanSetting)setting).toggle();
                         return true;
                     }
                 }
@@ -519,11 +672,15 @@ public final class CategoryPanel {
             int mouseY,
             int mouseButton
     ) {
-        if (mouseButton != 0 || draggingSlider == null) {
+        if (mouseButton != 0
+                || draggingSlider == null) {
             return;
         }
 
-        updateSliderValue(draggingSlider, mouseX);
+        updateSliderValue(
+                draggingSlider,
+                mouseX
+        );
     }
 
     public void mouseReleased(
@@ -559,12 +716,19 @@ public final class CategoryPanel {
                 (double)(mouseX - draggingSliderX)
                         / (double)draggingSliderWidth;
 
-        percentage = clamp(percentage, 0.0D, 1.0D);
+        percentage = clamp(
+                percentage,
+                0.0D,
+                1.0D
+        );
 
-        double value = setting.getMinimum()
-                + percentage
-                * (setting.getMaximum()
-                - setting.getMinimum());
+        double value =
+                setting.getMinimum()
+                        + percentage
+                        * (
+                        setting.getMaximum()
+                                - setting.getMinimum()
+                );
 
         /*
          * NumberSetting#setValue invokes normalizeValue(), which should
@@ -574,20 +738,38 @@ public final class CategoryPanel {
     }
 
     private double getPercentage(NumberSetting setting) {
-        double range = setting.getMaximum()
-                - setting.getMinimum();
+        double range =
+                setting.getMaximum()
+                        - setting.getMinimum();
 
         if (range <= 0.0D) {
             return 0.0D;
         }
 
         return clamp(
-                (setting.getDoubleValue()
-                        - setting.getMinimum())
-                        / range,
+                (
+                        setting.getDoubleValue()
+                                - setting.getMinimum()
+                ) / range,
                 0.0D,
                 1.0D
         );
+    }
+
+    private String getKeybindDisplayName(int keyCode) {
+        if (keyCode == Module.UNBOUND_KEY) {
+            return "NONE";
+        }
+
+        String displayName =
+                GameSettings.getKeyDisplayString(keyCode);
+
+        if (displayName == null
+                || displayName.length() == 0) {
+            return "#" + keyCode;
+        }
+
+        return displayName;
     }
 
     private String formatNumber(double value) {
@@ -595,18 +777,26 @@ public final class CategoryPanel {
          * Show integers without a decimal. Other values are shown with
          * two decimal places and trailing zeroes removed.
          */
-        if (Math.abs(value - Math.round(value)) < 0.000001D) {
+        if (Math.abs(value - Math.round(value))
+                < 0.000001D) {
+
             return Long.toString(Math.round(value));
         }
 
         String text = String.format("%.2f", value);
 
         while (text.endsWith("0")) {
-            text = text.substring(0, text.length() - 1);
+            text = text.substring(
+                    0,
+                    text.length() - 1
+            );
         }
 
         if (text.endsWith(".")) {
-            text = text.substring(0, text.length() - 1);
+            text = text.substring(
+                    0,
+                    text.length() - 1
+            );
         }
 
         return text;
@@ -614,7 +804,9 @@ public final class CategoryPanel {
 
     private boolean isModuleExpanded(Module module) {
         Boolean value = expandedModules.get(module);
-        return value != null && value.booleanValue();
+
+        return value != null
+                && value.booleanValue();
     }
 
     private void setModuleExpanded(
@@ -632,8 +824,10 @@ public final class CategoryPanel {
     }
 
     private int centerTextOffset(int rowHeight) {
-        return (rowHeight
-                - mc.fontRendererObj.FONT_HEIGHT) / 2;
+        return (
+                rowHeight
+                        - mc.fontRendererObj.FONT_HEIGHT
+        ) / 2;
     }
 
     private boolean isInside(
@@ -680,5 +874,10 @@ public final class CategoryPanel {
 
     public void setExpanded(boolean expanded) {
         this.expanded = expanded;
+
+        if (!expanded) {
+            draggingSlider = null;
+            owner.cancelKeybindCapture();
+        }
     }
 }
