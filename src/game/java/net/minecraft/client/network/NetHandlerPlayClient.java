@@ -225,6 +225,7 @@ import net.minecraft.world.storage.MapData;
 
 import dev.spoon.VaporClient;
 import dev.spoon.event.VelocityEvent;
+import dev.spoon.event.VelocitySource;
 
 /**+
  * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
@@ -273,6 +274,10 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient {
 	public byte[] cachedServerInfoData = null;
 	public boolean allowedDisplayWebview = false;
 	public boolean allowedDisplayWebviewYes = false;
+
+	private static final long EXPLOSION_VELOCITY_WINDOW_MS = 200L;
+
+	private long lastExplosionPacketTime = Long.MIN_VALUE;
 
 	public NetHandlerPlayClient(Minecraft mcIn, GuiScreen parGuiScreen, EaglercraftNetworkManager parNetworkManager,
 			GameProfile parGameProfile, GamePluginMessageProtocol eaglerProtocol) {
@@ -569,7 +574,10 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient {
 	 * value
 	 */
 	public void handleEntityVelocity(S12PacketEntityVelocity packetIn) {
-		Entity entity = this.clientWorldController.getEntityByID(packetIn.getEntityID());
+		Entity entity = this.clientWorldController.getEntityByID(
+				packetIn.getEntityID()
+		);
+
 		if (entity == null) {
 			return;
 		}
@@ -578,11 +586,27 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient {
 		double motionY = (double)packetIn.getMotionY() / 8000.0D;
 		double motionZ = (double)packetIn.getMotionZ() / 8000.0D;
 
+		VelocitySource source = VelocitySource.ENTITY;
+
+		if (entity == this.gameController.thePlayer) {
+			long timeSinceExplosion =
+					Minecraft.getSystemTime()
+							- this.lastExplosionPacketTime;
+
+			if (timeSinceExplosion >= 0L
+					&& timeSinceExplosion
+					<= EXPLOSION_VELOCITY_WINDOW_MS) {
+
+				source = VelocitySource.EXPLOSION;
+			}
+		}
+
 		VelocityEvent event = new VelocityEvent(
 				entity,
 				motionX,
 				motionY,
-				motionZ
+				motionZ,
+				source
 		);
 
 		VaporClient.getInstance().onVelocity(event);
@@ -1074,13 +1098,48 @@ public class NetHandlerPlayClient implements INetHandlerPlayClient {
 	 * Initiates a new explosion (sound, particles, drop spawn) for
 	 * the affected blocks indicated by the packet.
 	 */
+//	public void handleExplosion(S27PacketExplosion packetIn) {
+//		Explosion explosion = new Explosion(this.gameController.theWorld, (Entity) null, packetIn.getX(),
+//				packetIn.getY(), packetIn.getZ(), packetIn.getStrength(), packetIn.getAffectedBlockPositions());
+//		explosion.doExplosionB(true);
+//		this.gameController.thePlayer.motionX += (double) packetIn.func_149149_c();
+//		this.gameController.thePlayer.motionY += (double) packetIn.func_149144_d();
+//		this.gameController.thePlayer.motionZ += (double) packetIn.func_149147_e();
+//	}
 	public void handleExplosion(S27PacketExplosion packetIn) {
-		Explosion explosion = new Explosion(this.gameController.theWorld, (Entity) null, packetIn.getX(),
-				packetIn.getY(), packetIn.getZ(), packetIn.getStrength(), packetIn.getAffectedBlockPositions());
+		this.lastExplosionPacketTime = Minecraft.getSystemTime();
+
+		Explosion explosion = new Explosion(
+				this.gameController.theWorld,
+				null,
+				packetIn.getX(),
+				packetIn.getY(),
+				packetIn.getZ(),
+				packetIn.getStrength(),
+				packetIn.getAffectedBlockPositions()
+		);
+
 		explosion.doExplosionB(true);
-		this.gameController.thePlayer.motionX += (double) packetIn.func_149149_c();
-		this.gameController.thePlayer.motionY += (double) packetIn.func_149144_d();
-		this.gameController.thePlayer.motionZ += (double) packetIn.func_149147_e();
+
+		Entity player = this.gameController.thePlayer;
+
+		double motionX = (double)packetIn.func_149149_c();
+		double motionY = (double)packetIn.func_149144_d();
+		double motionZ = (double)packetIn.func_149147_e();
+
+		VelocityEvent event = new VelocityEvent(
+				player,
+				motionX,
+				motionY,
+				motionZ,
+				VelocitySource.EXPLOSION
+		);
+
+		VaporClient.getInstance().onVelocity(event);
+
+		player.motionX += event.getMotionX();
+		player.motionY += event.getMotionY();
+		player.motionZ += event.getMotionZ();
 	}
 
 	/**+

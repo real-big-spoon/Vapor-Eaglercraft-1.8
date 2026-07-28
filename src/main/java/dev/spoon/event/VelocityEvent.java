@@ -5,6 +5,7 @@ import net.minecraft.entity.Entity;
 public final class VelocityEvent {
 
     private final Entity entity;
+    private final VelocitySource source;
 
     private double motionX;
     private double motionY;
@@ -14,16 +15,22 @@ public final class VelocityEvent {
             Entity entity,
             double motionX,
             double motionY,
-            double motionZ
+            double motionZ,
+            VelocitySource source
     ) {
         this.entity = entity;
         this.motionX = motionX;
         this.motionY = motionY;
         this.motionZ = motionZ;
+        this.source = source;
     }
 
     public Entity getEntity() {
         return entity;
+    }
+
+    public VelocitySource getSource() {
+        return source;
     }
 
     public double getMotionX() {

@@ -1,13 +1,17 @@
 package dev.spoon.module.impl.player;
 
 import dev.spoon.event.VelocityEvent;
+import dev.spoon.event.VelocitySource;
 import dev.spoon.module.Module;
 import dev.spoon.module.ModuleCategory;
+import dev.spoon.setting.BooleanSetting;
 import dev.spoon.setting.NumberSetting;
 
 public final class VelocityModule extends Module {
 
     /*
+     * Reduction percentage:
+     *
      * 0%   = vanilla horizontal velocity
      * 50%  = half horizontal velocity
      * 100% = no horizontal velocity
@@ -23,6 +27,8 @@ public final class VelocityModule extends Module {
     );
 
     /*
+     * Reduction percentage:
+     *
      * 0%   = vanilla vertical velocity
      * 50%  = half vertical velocity
      * 100% = no vertical velocity
@@ -37,10 +43,21 @@ public final class VelocityModule extends Module {
             )
     );
 
+    /*
+     * false = explosion knockback remains vanilla
+     * true  = explosion knockback is also reduced
+     */
+    private final BooleanSetting includeExplosions = registerSetting(
+            new BooleanSetting(
+                    "Explosions",
+                    false
+            )
+    );
+
     public VelocityModule() {
         super(
                 "Velocity",
-                "Reduce knockback applied to the player",
+                "Reduces knockback applied to the player",
                 ModuleCategory.PLAYER,
                 Module.UNBOUND_KEY
         );
@@ -52,19 +69,19 @@ public final class VelocityModule extends Module {
             return;
         }
 
-        /*
-         * Only modify velocity applied to the local player.
-         * Other entities must retain their normal velocity.
-         */
         if (event.getEntity() != mc.thePlayer) {
             return;
         }
 
-        /*
-         * Remove this condition only if you deliberately want the module
-         * active while connected to external multiplayer servers.
-         */
         if (!mc.isSingleplayer()) {
+            return;
+        }
+
+        /*
+         * Preserve normal explosion knockback when the setting is off.
+         */
+        if (event.getSource() == VelocitySource.EXPLOSION
+                && !includeExplosions.isEnabled()) {
             return;
         }
 
@@ -104,5 +121,9 @@ public final class VelocityModule extends Module {
 
     public double getVerticalReduction() {
         return verticalReduction.getDoubleValue();
+    }
+
+    public boolean includesExplosions() {
+        return includeExplosions.isEnabled();
     }
 }
