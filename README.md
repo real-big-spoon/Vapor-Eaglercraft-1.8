@@ -1,7 +1,7 @@
 # Vapor: A lightweight Ghost/Hack Client for EaglerCraft 1.8 
 
 Vapor is a high-performance ghost client designed for Eaglercraft 1.8. It comes with several modules designed to enhance the user experience as well as QOL mods not included in the base EaglerCraft client.
-###Disclaimer: this project is meant for **educational and research purposes only!** You are responsible for playing fairly and using this software within the rules.
+### Disclaimer: this project is meant for **educational and research purposes only!** You are responsible for playing fairly and using this software within the rules.
 
 # Compiling
 ### Java 17 or greater is required!
