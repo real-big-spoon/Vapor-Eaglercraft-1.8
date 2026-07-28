@@ -58,6 +58,8 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.StringUtils;
 import net.minecraft.world.border.WorldBorder;
 
+import dev.spoon.VaporClient;
+
 /**+
  * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
  * 
@@ -300,6 +302,9 @@ public class GuiIngame extends Gui {
 		if (this.mc.currentScreen == null) {
 			this.mc.voiceOverlay.drawOverlay();
 		}
+
+		// render VaporClient hud
+		VaporClient.getInstance().onRender2D(partialTicks);
 
 		GlStateManager.enableBlend();
 		GlStateManager.tryBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA, 1, 0);

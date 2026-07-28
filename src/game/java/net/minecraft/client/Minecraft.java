@@ -201,6 +201,8 @@ import net.minecraft.world.WorldSettings;
 import net.minecraft.world.storage.ISaveFormat;
 import net.optifine.Config;
 
+import dev.spoon.VaporClient;
+
 /**+
  * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
  * 
@@ -502,6 +504,9 @@ public class Minecraft implements IThreadListener {
 		SkinPreviewRenderer.initialize();
 		this.checkGLError("Post startup");
 		this.ingameGUI = new GuiIngame(this);
+
+		// init. vapor client
+		VaporClient.getInstance().initialize();
 
 		this.mouseGrabSupported = Mouse.isMouseGrabSupported();
 		PointerInputAbstraction.init(this);
@@ -1406,6 +1411,19 @@ public class Minecraft implements IThreadListener {
 			processTouchMine();
 
 			while (Keyboard.next()) {
+				int keyCode = Keyboard.getEventKey();
+
+				KeyBinding.setKeyBindState(
+						keyCode,
+						Keyboard.getEventKeyState()
+				);
+
+				if (Keyboard.getEventKeyState()) {
+					KeyBinding.onTick(keyCode);
+
+					VaporClient.getInstance().onKeyPressed(keyCode);
+				}
+
 				int k = Keyboard.getEventKey() == 0 ? Keyboard.getEventCharacter() + 256 : Keyboard.getEventKey();
 				if (k == 0x1D && (Keyboard.areKeysLocked() || isFullScreen())) {
 					KeyBinding.setKeyBindState(gameSettings.keyBindSprint.getKeyCode(), Keyboard.getEventKeyState());
@@ -1768,6 +1786,9 @@ public class Minecraft implements IThreadListener {
 				logger.warn("Server redirect blocked: {}", reconURI);
 			}
 		}
+
+		// vapor client hook
+		VaporClient.getInstance().onTick();
 
 		this.systemTime = getSystemTime();
 	}
