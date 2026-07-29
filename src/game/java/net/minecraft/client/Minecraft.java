@@ -1057,8 +1057,23 @@ public class Minecraft implements IThreadListener {
 
 			} else {
 				switch (this.objectMouseOver.typeOfHit) {
+//				case ENTITY:
+//					this.playerController.attackEntity(this.thePlayer, this.objectMouseOver.entityHit);
+//					break;
 				case ENTITY:
-					this.playerController.attackEntity(this.thePlayer, this.objectMouseOver.entityHit);
+					Entity target = this.objectMouseOver.entityHit;
+					boolean wasSprinting =
+							this.thePlayer.isSprinting();
+
+					this.playerController.attackEntity(
+							this.thePlayer,
+							target
+					);
+
+					VaporClient.getInstance().onAttackEntity(
+							target,
+							wasSprinting
+					);
 					break;
 				case BLOCK:
 					BlockPos blockpos = this.objectMouseOver.getBlockPos();
@@ -1082,7 +1097,10 @@ public class Minecraft implements IThreadListener {
 	 */
 	public void rightClickMouse() {
 		if (!this.playerController.func_181040_m()) {
-			this.rightClickDelayTimer = 4;
+//			this.rightClickDelayTimer = 4;
+			this.rightClickDelayTimer =
+					VaporClient.getInstance()
+							.getPlacementDelayTicks(4);
 			boolean flag = true;
 			ItemStack itemstack = this.thePlayer.inventory.getCurrentItem();
 			if (this.objectMouseOver == null) {

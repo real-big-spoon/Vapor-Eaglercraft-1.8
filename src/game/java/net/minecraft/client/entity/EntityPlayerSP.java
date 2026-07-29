@@ -55,6 +55,9 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.world.IInteractionObject;
 import net.minecraft.world.World;
 
+import dev.spoon.VaporClient;
+import net.minecraft.network.play.client.C03PacketPlayer;
+
 /**+
  * This portion of EaglercraftX contains deobfuscated Minecraft 1.8 source code.
  * 
@@ -132,7 +135,25 @@ public class EntityPlayerSP extends AbstractClientPlayer {
 		if (entityIn instanceof EntityMinecart) {
 			this.mc.getSoundHandler().playSound(new MovingSoundMinecartRiding(this, (EntityMinecart) entityIn));
 		}
+	}
 
+	// send mov packet for blink
+	private void sendMovementPacket(C03PacketPlayer packet) {
+		if (packet == null) {
+			return;
+		}
+
+		/*
+		 * A true return means PauseNetwork consumed the packet.
+		 */
+		if (VaporClient.getInstance().queueMovementPacket(
+				this.sendQueue,
+				packet
+		)) {
+			return;
+		}
+
+		this.sendQueue.addToSendQueue(packet);
 	}
 
 	/**+
@@ -142,7 +163,11 @@ public class EntityPlayerSP extends AbstractClientPlayer {
 		if (this.worldObj.isBlockLoaded(new BlockPos(this.posX, 0.0D, this.posZ))) {
 			super.onUpdate();
 			if (this.isRiding()) {
-				this.sendQueue.addToSendQueue(
+//				this.sendQueue.addToSendQueue(
+//						new C03PacketPlayer.C05PacketPlayerLook(this.rotationYaw, this.rotationPitch, this.onGround));
+//				this.sendQueue.addToSendQueue(new C0CPacketInput(this.moveStrafing, this.moveForward,
+//						this.movementInput.jump, this.movementInput.sneak));
+				this.sendMovementPacket(
 						new C03PacketPlayer.C05PacketPlayerLook(this.rotationYaw, this.rotationPitch, this.onGround));
 				this.sendQueue.addToSendQueue(new C0CPacketInput(this.moveStrafing, this.moveForward,
 						this.movementInput.jump, this.movementInput.sneak));
@@ -194,20 +219,20 @@ public class EntityPlayerSP extends AbstractClientPlayer {
 			boolean flag3 = d3 != 0.0D || d4 != 0.0D;
 			if (this.ridingEntity == null) {
 				if (flag2 && flag3) {
-					this.sendQueue.addToSendQueue(
+					this.sendMovementPacket(
 							new C03PacketPlayer.C06PacketPlayerPosLook(this.posX, this.getEntityBoundingBox().minY,
 									this.posZ, this.rotationYaw, this.rotationPitch, this.onGround));
 				} else if (flag2) {
-					this.sendQueue.addToSendQueue(new C03PacketPlayer.C04PacketPlayerPosition(this.posX,
+					this.sendMovementPacket(new C03PacketPlayer.C04PacketPlayerPosition(this.posX,
 							this.getEntityBoundingBox().minY, this.posZ, this.onGround));
 				} else if (flag3) {
-					this.sendQueue.addToSendQueue(new C03PacketPlayer.C05PacketPlayerLook(this.rotationYaw,
+					this.sendMovementPacket(new C03PacketPlayer.C05PacketPlayerLook(this.rotationYaw,
 							this.rotationPitch, this.onGround));
 				} else {
-					this.sendQueue.addToSendQueue(new C03PacketPlayer(this.onGround));
+					this.sendMovementPacket(new C03PacketPlayer(this.onGround));
 				}
 			} else {
-				this.sendQueue.addToSendQueue(new C03PacketPlayer.C06PacketPlayerPosLook(this.motionX, -999.0D,
+				this.sendMovementPacket(new C03PacketPlayer.C06PacketPlayerPosLook(this.motionX, -999.0D,
 						this.motionZ, this.rotationYaw, this.rotationPitch, this.onGround));
 				flag2 = false;
 			}

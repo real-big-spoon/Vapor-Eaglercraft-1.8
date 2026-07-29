@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import dev.spoon.event.VelocityEvent;
+import net.minecraft.entity.Entity;
 
 public final class ModuleManager {
 
@@ -66,6 +67,24 @@ public final class ModuleManager {
         for (Module module : modules) {
             if (module.isEnabled()) {
                 module.onVelocity(event);
+            }
+        }
+    }
+
+    public void onAttackEntity(
+            Entity target,
+            boolean wasSprinting
+    ) {
+        if (target == null) {
+            return;
+        }
+
+        for (Module module : modules) {
+            if (module.isEnabled()) {
+                module.onAttackEntity(
+                        target,
+                        wasSprinting
+                );
             }
         }
     }

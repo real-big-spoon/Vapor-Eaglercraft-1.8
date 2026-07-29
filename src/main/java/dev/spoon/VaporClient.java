@@ -6,13 +6,20 @@ import net.minecraft.client.Minecraft;
 import dev.spoon.config.ConfigManager;
 
 import dev.spoon.event.VelocityEvent;
+import net.minecraft.network.Packet;
 import net.minecraft.network.play.client.C00PacketKeepAlive;
+import net.minecraft.client.network.NetHandlerPlayClient;
+import net.minecraft.network.play.client.C03PacketPlayer;
+import net.minecraft.entity.Entity;
 
 import dev.spoon.module.impl.hud.ModDataModule;
 import dev.spoon.module.impl.player.CombatReachModule;
 import dev.spoon.module.impl.player.VelocityModule;
 import dev.spoon.module.impl.player.PingSpooferModule;
+import dev.spoon.module.impl.player.FastPlaceModule;
+import dev.spoon.module.impl.combat.AutoWTapModule;
 import dev.spoon.module.impl.render.FovEffectsModule;
+import dev.spoon.module.impl.movement.PauseNetworkModule;
 
 public class VaporClient {
 
@@ -40,12 +47,27 @@ public class VaporClient {
         if (initialized) {
             return;
         }
-        // reg
+
+        // reg modules
+
+        // HUD:
         moduleManager.register(new ModDataModule());
+
+        // PLAYER:
         moduleManager.register(new CombatReachModule());
         moduleManager.register(new VelocityModule());
         moduleManager.register(new PingSpooferModule());
+        moduleManager.register(new FastPlaceModule());
+
+        // RENDER:
         moduleManager.register(new FovEffectsModule());
+
+        // MOVEMENT:
+        moduleManager.register(new PauseNetworkModule());
+
+        // COMBAT:
+        moduleManager.register(new AutoWTapModule());
+
         initialized = true;
 
         /*
@@ -105,6 +127,20 @@ public class VaporClient {
         moduleManager.onVelocity(event);
     }
 
+    public void onAttackEntity(
+            Entity target,
+            boolean wasSprinting
+    ) {
+        if (!initialized || target == null) {
+            return;
+        }
+
+        moduleManager.onAttackEntity(
+                target,
+                wasSprinting
+        );
+    }
+
     public void onRender3D(float partialTicks) {
         moduleManager.onRender3D(partialTicks);
     }
@@ -144,5 +180,41 @@ public class VaporClient {
         }
 
         return module.applyIntensity(vanillaMultiplier);
+    }
+
+    public int getPlacementDelayTicks(int vanillaDelay) {
+        if (!initialized) {
+            return vanillaDelay;
+        }
+
+        FastPlaceModule module = moduleManager.getByClass(
+                FastPlaceModule.class
+        );
+
+        if (module == null) {
+            return vanillaDelay;
+        }
+
+        return module.resolvePlacementDelay(vanillaDelay);
+    }
+
+    public boolean queueMovementPacket(
+            NetHandlerPlayClient connection,
+            C03PacketPlayer packet
+    ) {
+        if (!initialized || connection == null || packet == null) {
+            return false;
+        }
+
+        PauseNetworkModule module =
+                moduleManager.getByClass(
+                        PauseNetworkModule.class
+                );
+
+        return module != null
+                && module.queueMovementPacket(
+                connection,
+                packet
+        );
     }
 }

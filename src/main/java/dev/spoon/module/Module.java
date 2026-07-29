@@ -7,6 +7,7 @@ import java.util.List;
 import dev.spoon.event.VelocityEvent;
 import dev.spoon.setting.Setting;
 import net.minecraft.client.Minecraft;
+import net.minecraft.entity.Entity;
 
 public abstract class Module {
 
@@ -89,6 +90,12 @@ public abstract class Module {
 
     public void onVelocity(VelocityEvent event) {
         // pass?? lol
+    }
+
+    public void onAttackEntity(
+            Entity target,
+            boolean wasSprinting
+    ) {
     }
 
     public final String getName() {
